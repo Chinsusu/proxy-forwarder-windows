@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proxy Forward · Grid Table</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{background:#f8f9fa;font-family:system-ui,-apple-system,sans-serif}
+    .sidebar{background:linear-gradient(180deg,#2d1b4e 0%,#1a0f2e 100%)}
+    .sidebar-item{transition:all .2s;border-radius:.5rem;margin:.25rem 0}
+    .sidebar-item:hover{background:rgba(255,255,255,.1)}
+    .sidebar-item.active{background:rgba(147,51,234,.3);border-left:3px solid #a855f7}
+    .logo-gradient{background:linear-gradient(135deg,#ec4899,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .table-header{background:#2d1b4e;color:#fff}
+    .status-active{background:#d1fae5;color:#065f46;padding:.25rem .75rem;border-radius:9999px;font-size:.75rem;font-weight:600}
+    .status-inactive{background:#fee2e2;color:#991b1b;padding:.25rem .75rem;border-radius:9999px;font-size:.75rem;font-weight:600}
+    .action-btn{padding:.4rem;border-radius:.375rem;transition:all .2s}
+    .action-btn:hover{background:#f3f4f6}
+    .avatar{width:2rem;height:2rem;border-radius:9999px;object-fit:cover}
+    .pagination-btn{padding:.5rem .75rem;border:1px solid #e5e7eb;border-radius:.375rem;transition:all .2s}
+    .pagination-btn:hover{background:#f3f4f6}
+    .pagination-btn.active{background:#7c3aed;color:#fff;border-color:#7c3aed}
+  </style>
+</head>
+<body class="flex h-screen">
+  <!-- SIDEBAR -->
+  <aside class="sidebar w-64 p-4 flex flex-col">
+    <div class="flex items-center gap-2 mb-8">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 grid place-items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a5 5 0 0 0-5 5v2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5m-3 7V6a3 3 0 1 1 6 0v2z"/></svg>
+      </div>
+      <div class="text-white font-bold text-lg">Proxy<br/>Forward</div>
+    </div>
+
+    <nav class="flex-1 space-y-1">
+      <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2 text-slate-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="#" class="sidebar-item active flex items-center gap-3 px-3 py-2 text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2M9 17H7v-7h2v7m4 0h-2V7h2v10m4 0h-2v-4h2v4z"/></svg>
+        <span>Proxies</span>
+      </a>
+      <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2 text-slate-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3m-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3m0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5m8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        <span>Users</span>
+      </a>
+      <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2 text-slate-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81a.488.488 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="pt-4 border-t border-slate-700">
+      <div class="flex items-center gap-3 px-3 py-2">
+        <img src="https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=fff" class="avatar" />
+        <div class="flex-1">
+          <div class="text-white text-sm font-medium">Admin</div>
+          <div class="text-slate-400 text-xs">admin@proxy.io</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 overflow-auto">
+    <!-- HEADER -->
+    <header class="bg-white border-b px-6 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">Proxies Record</h1>
+        <p class="text-sm text-gray-500">Home / Departments / Record</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        </button>
+        <button class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">+ Add Department</button>
+      </div>
+    </header>
+
+    <!-- FILTERS -->
+    <div class="bg-white m-6 p-4 rounded-xl shadow-sm">
+      <div class="grid grid-cols-5 gap-3 mb-4">
+        <input type="text" placeholder="Type name" class="px-3 py-2 border rounded-lg" />
+        <input type="email" placeholder="Type email" class="px-3 py-2 border rounded-lg" />
+        <input type="date" class="px-3 py-2 border rounded-lg" />
+        <select class="px-3 py-2 border rounded-lg">
+          <option>Select department</option>
+          <option>Marketing</option>
+          <option>Finance</option>
+          <option>IT</option>
+        </select>
+        <select class="px-3 py-2 border rounded-lg">
+          <option>All</option>
+          <option>Active</option>
+          <option>Inactive</option>
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">Search</button>
+        <button class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Reset</button>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="m-6 bg-white rounded-xl shadow-sm overflow-hidden">
+      <table class="min-w-full">
+        <thead class="table-header">
+          <tr>
+            <th class="py-3 px-4 text-left">#</th>
+            <th class="py-3 px-4 text-left">Proxy Address</th>
+            <th class="py-3 px-4 text-left">Local Port</th>
+            <th class="py-3 px-4 text-left">Creation Date</th>
+            <th class="py-3 px-4 text-left">Main Department</th>
+            <th class="py-3 px-4 text-left">Status</th>
+            <th class="py-3 px-4 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody id="rows" class="divide-y divide-gray-200"></tbody>
+      </table>
+
+      <!-- PAGINATION -->
+      <div class="p-4 flex items-center justify-between border-t">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Show</span>
+          <select class="px-2 py-1 border rounded">
+            <option>10</option>
+            <option>25</option>
+            <option>50</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-1">
+          <button class="pagination-btn">&lt;</button>
+          <button class="pagination-btn active">1</button>
+          <button class="pagination-btn">2</button>
+          <button class="pagination-btn">3</button>
+          <button class="pagination-btn">4</button>
+          <button class="pagination-btn">5</button>
+          <span class="px-2">...</span>
+          <button class="pagination-btn">&gt;</button>
+        </div>
+        <div class="text-sm text-gray-600">View 1 - 10 of 100 List</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    var rowsEl = document.getElementById('rows');
+    var DATA = { items: [] };
+
+    function hdr(){ var t = localStorage.getItem('admintoken') || ''; var h = {}; if(t){ h['X-Admin-Token'] = t; } return h; }
+    function GET(u){ return fetch(u, {headers: hdr()}).then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(t); }); return r.json(); }); }
+
+    function getInitial(name){ return name ? name.charAt(0).toUpperCase() : 'P'; }
+    function getRandomColor(){ var colors = ['ef4444','f59e0b','10b981','3b82f6','8b5cf6','ec4899']; return colors[Math.floor(Math.random() * colors.length)]; }
+
+    function rowItem(it, idx){
+      var tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50';
+
+      var tdIdx = document.createElement('td'); tdIdx.className = 'py-3 px-4 text-gray-600'; tdIdx.textContent = String(idx+1); tr.appendChild(tdIdx);
+
+      var up = (it.user ? it.user + ':' + it.pass + '@' : '') + it.host + ':' + it.port;
+      var color = getRandomColor();
+      var initial = getInitial(it.host);
+      
+      var tdUp = document.createElement('td'); tdUp.className = 'py-3 px-4';
+      var divFlex = document.createElement('div'); divFlex.className = 'flex items-center gap-3';
+      var avatar = document.createElement('div');
+      avatar.className = 'w-8 h-8 rounded-full grid place-items-center text-white font-bold text-sm';
+      avatar.style.background = '#' + color;
+      avatar.textContent = initial;
+      var divText = document.createElement('div');
+      var divName = document.createElement('div'); divName.className = 'font-medium text-gray-800'; divName.textContent = up;
+      var divId = document.createElement('div'); divId.className = 'text-xs text-gray-500'; divId.textContent = '+' + it.id;
+      divText.appendChild(divName); divText.appendChild(divId);
+      divFlex.appendChild(avatar); divFlex.appendChild(divText);
+      tdUp.appendChild(divFlex); tr.appendChild(tdUp);
+
+      var local = '127.0.0.1:' + it.local_port;
+      var tdLocal = document.createElement('td'); tdLocal.className = 'py-3 px-4 text-gray-600'; tdLocal.textContent = local; tr.appendChild(tdLocal);
+
+      var tdDate = document.createElement('td'); tdDate.className = 'py-3 px-4 text-gray-600'; tdDate.textContent = new Date().toLocaleDateString(); tr.appendChild(tdDate);
+
+      var tdDept = document.createElement('td'); tdDept.className = 'py-3 px-4 text-gray-600'; tdDept.textContent = it.status === 'live' ? 'Active Proxies' : 'Inactive Proxies'; tr.appendChild(tdDept);
+
+      var tdStatus = document.createElement('td'); tdStatus.className = 'py-3 px-4';
+      var badge = document.createElement('span');
+      badge.className = it.status === 'live' ? 'status-active' : 'status-inactive';
+      badge.textContent = it.status === 'live' ? 'Active' : 'Inactive';
+      tdStatus.appendChild(badge); tr.appendChild(tdStatus);
+
+      var tdAction = document.createElement('td'); tdAction.className = 'py-3 px-4';
+      var divActions = document.createElement('div'); divActions.className = 'flex items-center gap-2';
+      
+      var btnView = document.createElement('button'); btnView.className = 'action-btn';
+      btnView.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
+      
+      var btnEdit = document.createElement('button'); btnEdit.className = 'action-btn';
+      btnEdit.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+      
+      var btnDel = document.createElement('button'); btnDel.className = 'action-btn';
+      btnDel.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+      
+      divActions.appendChild(btnView); divActions.appendChild(btnEdit); divActions.appendChild(btnDel);
+      tdAction.appendChild(divActions); tr.appendChild(tdAction);
+
+      return tr;
+    }
+
+    function render(list){
+      rowsEl.innerHTML = '';
+      for(var i=0;i<list.length;i++){ rowsEl.appendChild(rowItem(list[i], i)); }
+    }
+
+    function reload(){
+      GET('/api/list').then(function(data){ DATA = data; render(DATA.items); }).catch(function(e){ console.error(e); });
+    }
+
+    reload();
+  </script>
+</body>
+</html>

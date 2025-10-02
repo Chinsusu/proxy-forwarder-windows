@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="vi" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proxy Forward · Local Only</title>
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background: radial-gradient(1200px 600px at 70% -10%, #0f1a2b 0%, #0a0f14 55%); }
+    code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .table thead th { position: sticky; top: 0; z-index: 5; }
+    .small-muted { font-size:.9rem; opacity:.8 }
+  </style>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg border-bottom" style="background:rgba(0,0,0,.25);backdrop-filter:saturate(140%) blur(6px)">
+    <div class="container-md">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
+        <span class="btn btn-primary btn-sm rounded-3 d-inline-grid place-items-center"><i class="bi bi-shield-lock-fill"></i></span>
+        Proxy Forward · Local Only
+      </a>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="input-group input-group-sm" title="Nếu đặt ADMIN_TOKEN khi chạy server, điền token để gửi kèm header X-Admin-Token">
+          <span class="input-group-text"><i class="bi bi-lock-fill"></i> Token</span>
+          <input id="token" class="form-control" placeholder="X-Admin-Token" />
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-md my-4">
+    <!-- CONTROLS -->
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <div class="row g-2 align-items-center mb-2">
+          <div class="col-12 col-lg-5">
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+              <input id="apiurl" class="form-control" placeholder="API URL: mỗi dòng ip:port:user:pass hoặc JSON array" />
+              <button class="btn btn-info" onclick="syncAPI()"><i class="bi bi-arrow-repeat me-1"></i>Sync từ API</button>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-plus-lg"></i></span>
+              <input id="oneline" class="form-control" placeholder="Thêm nhanh 1 proxy: ip:port:user:pass hoặc ip:port" />
+              <button class="btn btn-outline-primary" onclick="addOne()">Thêm</button>
+              <button class="btn btn-outline-secondary" onclick="openBulk()">Bulk</button>
+            </div>
+          </div>
+          <div class="col-12 col-lg-3 d-flex gap-2 justify-content-lg-end">
+            <a class="btn btn-outline-light" href="/api/export-local" target="_blank"><i class="bi bi-box-arrow-down me-1"></i>Export 127.0.0.1:port</a>
+            <button class="btn btn-outline-light" onclick="reload(true)"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-center mb-3">
+          <div class="col-auto form-check">
+            <input class="form-check-input" type="checkbox" id="autoref" onchange="toggleAuto()">
+            <label class="form-check-label" for="autoref">Auto refresh 5s</label>
+          </div>
+          <div class="col-auto"><span id="count" class="badge text-bg-secondary">0 proxies</span></div>
+          <div class="col-auto"><span class="badge text-bg-dark mono"><i class="bi bi-diagram-3 me-1"></i>127.0.0.1:10001+</span></div>
+          <div class="col ms-auto">
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input id="search" class="form-control" placeholder="Tìm: host, user, port, status…" oninput="applyFilter()" />
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-responsive rounded-3 overflow-hidden border">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th style="width:56px">#</th>
+                <th>Upstream</th>
+                <th>Local</th>
+                <th style="width:130px">Status</th>
+                <th style="width:280px">Action</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+
+        <p class="small-muted mt-3">UI chỉ mở trên <span class="badge text-bg-secondary">127.0.0.1</span>. Nếu bạn đặt <span class="badge text-bg-secondary">ADMIN_TOKEN</span> khi chạy server, điền token ở góc phải để header <span class="badge text-bg-secondary">X-Admin-Token</span> được gửi kèm.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- BULK MODAL -->
+  <div class="modal" id="bulkModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Thêm hàng loạt</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-secondary mb-2">Mỗi dòng 1 proxy: <code class="mono">ip:port:user:pass</code> hoặc <code class="mono">ip:port</code></p>
+          <textarea id="bulktext" class="form-control mono" rows="10" placeholder="1.2.3.4:8080:user:pass
+5.6.7.8:3128"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" class="btn btn-primary" onclick="doBulk()"><i class="bi bi-plus-lg me-1"></i>Thêm tất cả</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+    <div id="liveToast" class="toast align-items-center text-bg-dark border-0" role="status" aria-live="polite" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastBody">Ready.</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const $ = (q)=>document.querySelector(q);
+    const rowsEl = $('#rows');
+    const toastEl = new bootstrap.Toast($('#liveToast'), { delay: 1800 });
+    const tokenInput = $('#token');
+    tokenInput.value = localStorage.getItem('admintoken') || '';
+    tokenInput.addEventListener('change',()=>{ localStorage.setItem('admintoken', tokenInput.value.trim()); toast('Token đã lưu'); });
+
+    let DATA = { items: [] };
+    let AUTO = null;
+
+    function hdr(){ const t = localStorage.getItem('admintoken') || ''; return t? { 'X-Admin-Token': t } : {}; }
+    async function GET(u){ const r = await fetch(u, {headers: hdr()}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    async function POST(u, body){ const opt={ method:'POST', headers: hdr() }; if(typeof body==='string') opt.body=body; const r=await fetch(u,opt); if(!r.ok) throw new Error(await r.text()); try{return await r.json();}catch{return{};} }
+    function toast(msg){ $('#toastBody').textContent = msg; toastEl.show(); }
+
+    function badgeStatus(s){ s=(s||'').toLowerCase(); if(s==='live') return '<span class="badge text-bg-success">live</span>'; if(s==='stopped') return '<span class="badge text-bg-warning">stopped</span>'; if(s==='dead') return '<span class="badge text-bg-danger">dead</span>'; return '<span class="badge text-bg-secondary">-</span>'; }
+
+    function copyTxt(txt){ navigator.clipboard.writeText(txt).then(()=>toast('Đã copy')).catch(()=>toast('Copy thất bại')); }
+
+    function render(list){
+      $('#count').textContent = `${list.length} proxies`;
+      rowsEl.innerHTML = '';
+      list.forEach((it, i)=>{
+        const up = `${it.user? it.user+':'+it.pass+'@' : ''}${it.host}:${it.port}`;
+        const local = `127.0.0.1:${it.local_port}`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-muted">${i+1}</td>
+          <td>
+            <div class="mono">${up}</div>
+            <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyTxt('${up}')"><i class="bi bi-clipboard me-1"></i>Copy upstream</button>
+          </td>
+          <td>
+            <div class="mono">${local}</div>
+            <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyTxt('${local}')"><i class="bi bi-clipboard me-1"></i>Copy local</button>
+          </td>
+          <td>${badgeStatus(it.status)}</td>
+          <td>
+            <div class="btn-group" role="group">
+              <button class="btn btn-outline-success" onclick="start('${it.id}')">Start</button>
+              <button class="btn btn-outline-warning" onclick="stop('${it.id}')">Stop</button>
+              <button class="btn btn-outline-danger" onclick="del('${it.id}')">Delete</button>
+            </div>
+          </td>`;
+        rowsEl.appendChild(tr);
+      });
+    }
+
+    function applyFilter(){
+      const q = ($('#search').value||'').toLowerCase().trim();
+      if(!q){ render(DATA.items); return; }
+      const out = DATA.items.filter(it=>{
+        const up = `${it.user? it.user+':'+it.pass+'@' : ''}${it.host}:${it.port}`.toLowerCase();
+        const local = `127.0.0.1:${it.local_port}`;
+        return up.includes(q) || local.includes(q) || (it.status||'').toLowerCase().includes(q);
+      });
+      render(out);
+    }
+
+    async function reload(showToast){
+      try{ DATA = await GET('/api/list'); applyFilter(); if(showToast) toast('Đã reload'); }catch(e){ toast(e.message||'Lỗi tải dữ liệu'); }
+    }
+    async function addOne(){ const s=$('#oneline').value.trim(); if(!s) return; try{ await POST('/api/add', s); $('#oneline').value=''; toast('Đã thêm'); reload(); }catch(e){ toast(e.message); } }
+    async function start(id){ try{ await POST('/api/start?id='+encodeURIComponent(id)); toast('Started'); reload(); }catch(e){ toast(e.message);} }
+    async function stop(id){ try{ await POST('/api/stop?id='+encodeURIComponent(id)); toast('Stopped'); reload(); }catch(e){ toast(e.message);} }
+    async function del(id){ if(!confirm('Xoá proxy này?')) return; try{ await POST('/api/remove?id='+encodeURIComponent(id)); toast('Đã xoá'); reload(); }catch(e){ toast(e.message);} }
+    async function syncAPI(){ const u=$('#apiurl').value.trim(); if(!u) return; try{ await GET('/api/sync?url='+encodeURIComponent(u)); toast('Đã sync từ API'); reload(); }catch(e){ toast(e.message);} }
+
+    function toggleAuto(){ const on=$('#autoref').checked; if(AUTO){ clearInterval(AUTO); AUTO=null; } if(on){ AUTO=setInterval(()=>reload(),5000); } }
+
+    let bulkModal; function openBulk(){ bulkModal ||= new bootstrap.Modal($('#bulkModal')); bulkModal.show(); }
+    async function doBulk(){ const lines=$('#bulktext').value.split('\n').map(s=>s.trim()).filter(Boolean); if(!lines.length){ toast('Không có dòng nào'); return; } let ok=0, fail=0; for(const line of lines){ try{ await POST('/api/add', line); ok++; }catch{ fail++; } } bulkModal.hide(); toast(`Thêm xong: ${ok} ok, ${fail} lỗi`); reload(); }
+
+    reload();
+  </script>
+</body>
+</html>
