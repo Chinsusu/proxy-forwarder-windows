@@ -90,6 +90,44 @@ const indexHTML = `<!doctype html>
         </div>
       </div>
 
+      <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl shadow-sm border-2 border-purple-200">
+        <h3 class="font-bold mb-3 text-purple-800">🚀 CloudMini Order</h3>
+        <div class="grid grid-cols-3 gap-2 mb-2">
+          <input id="cloudminiApiKey" type="password" placeholder="API Key" class="px-3 py-2 border rounded-lg">
+          <input id="cloudminiQuantity" type="number" placeholder="Qty" value="1" min="1" class="px-3 py-2 border rounded-lg">
+          <input id="cloudminiDays" type="number" placeholder="Days" value="1" min="1" class="px-3 py-2 border rounded-lg">
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-2">
+          <select id="cloudminiCountry" class="px-3 py-2 border rounded-lg">
+            <option value="">Country</option>
+            <option value="US">🇺🇸 US</option>
+            <option value="GB">🇬🇧 UK</option>
+            <option value="DE">🇩🇪 DE</option>
+            <option value="FR">🇫🇷 FR</option>
+            <option value="JP">🇯🇵 JP</option>
+            <option value="SG">🇸🇬 SG</option>
+          </select>
+          <select id="cloudminiState" class="px-3 py-2 border rounded-lg">
+            <option value="">State (Optional)</option>
+          </select>
+          <select id="cloudminiCity" class="px-3 py-2 border rounded-lg">
+            <option value="">City (Optional)</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="handleCloudMiniOrder()" class="flex-1 px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 font-semibold">
+            ⚡ Order Now
+          </button>
+          <label class="flex items-center gap-2 px-4 py-2 border-2 border-purple-300 rounded-lg bg-white">
+            <input id="cloudminiAutoStart" type="checkbox">
+            <span class="text-sm font-medium">Auto Start</span>
+          </label>
+        </div>
+        <div class="mt-2 text-xs text-purple-600">
+          💡 Proxies will be added to pool. Check "Auto Start" to start immediately.
+        </div>
+      </div>
+
       <div class="bg-white p-4 rounded-xl shadow-sm">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-bold">Proxy List</h3>
@@ -160,6 +198,14 @@ const indexHTML = `<!doctype html>
     tokenInput.addEventListener('change', function(){
       localStorage.setItem('admintoken', tokenInput.value.trim());
       showToast('Token saved');
+    });
+
+    // Load CloudMini API key from localStorage
+    var cloudminiApiKeyInput = document.getElementById('cloudminiApiKey');
+    cloudminiApiKeyInput.value = localStorage.getItem('cloudmini_apikey') || '';
+    cloudminiApiKeyInput.addEventListener('change', function(){
+      localStorage.setItem('cloudmini_apikey', cloudminiApiKeyInput.value.trim());
+      showToast('CloudMini API Key saved');
     });
 
     function hdr(){ 
@@ -442,6 +488,71 @@ const indexHTML = `<!doctype html>
       } else {
         showToast('Auto refresh OFF');
       }
+    }
+
+    function handleCloudMiniOrder(){
+      var apiKey = document.getElementById('cloudminiApiKey').value.trim();
+      var qty = document.getElementById('cloudminiQuantity').value;
+      var days = document.getElementById('cloudminiDays').value;
+      var country = document.getElementById('cloudminiCountry').value;
+      var state = document.getElementById('cloudminiState').value;
+      var city = document.getElementById('cloudminiCity').value;
+      var autoStart = document.getElementById('cloudminiAutoStart').checked;
+      
+      if(!apiKey){ showToast('Enter CloudMini API Key'); return; }
+      if(!country){ showToast('Select country'); return; }
+      
+      var params = new URLSearchParams({
+        key: apiKey,
+        quantity: qty,
+        days: days,
+        country: country
+      });
+      if(state) params.append('state', state);
+      if(city) params.append('city', city);
+      
+      var url = 'https://api.cloudmini.cc/order?' + params.toString();
+      
+      showToast('Ordering from CloudMini...');
+      
+      fetch(url).then(function(r){
+        if(!r.ok) throw new Error('API request failed');
+        return r.json();
+      }).then(function(result){
+        if(result.code !== 200 || !result.data || !result.data.length){
+          throw new Error(result.msg || 'No proxies returned');
+        }
+        
+        var ok = 0, fail = 0;
+        var proxies = result.data;
+        
+        function addProxy(i){
+          if(i >= proxies.length){
+            showToast('CloudMini: ' + ok + ' added, ' + fail + ' failed');
+            reload();
+            return;
+          }
+          
+          var item = proxies[i];
+          // Parse CloudMini format: ip="hostname:internal_id", https=port
+          var hostname = item.ip.split(':')[0];
+          var proxyLine = hostname + ':' + item.https + ':' + item.username + ':' + item.password;
+          
+          var endpoint = autoStart ? '/api/add' : '/api/add-pool';
+          
+          POST(endpoint, proxyLine).then(function(){
+            ok++;
+            addProxy(i+1);
+          }).catch(function(){
+            fail++;
+            addProxy(i+1);
+          });
+        }
+        
+        addProxy(0);
+      }).catch(function(e){
+        showToast('CloudMini Error: ' + e.message);
+      });
     }
 
     reload();
