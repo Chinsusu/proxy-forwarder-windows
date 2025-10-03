@@ -53,17 +53,23 @@ func parseProxyLine(line string) (*Upstream, error) {
 
 // loadState loads state from yaml file
 func (m *Manager) loadState() error {
+	fmt.Printf("[LoadState] Reading from: %s\n", stateFile)
 	b, err := os.ReadFile(stateFile)
 	if err != nil {
 		if os.IsNotExist(err) {
+			fmt.Printf("[LoadState] File not found, starting fresh\n")
 			return nil
 		}
+		fmt.Printf("[LoadState] Read error: %v\n", err)
 		return err
 	}
+	fmt.Printf("[LoadState] Read %d bytes\n", len(b))
 	var st State
 	if err := yaml.Unmarshal(b, &st); err != nil {
+		fmt.Printf("[LoadState] YAML unmarshal error: %v\n", err)
 		return err
 	}
+	fmt.Printf("[LoadState] Parsed %d items, next port: %d\n", len(st.Items), st.Next)
 	if st.Next < firstLocalPort {
 		st.Next = firstLocalPort
 	}
@@ -71,7 +77,9 @@ func (m *Manager) loadState() error {
 	for _, it := range st.Items {
 		// reconstruct item but not running yet
 		m.items[it.ID] = &ProxyItem{cfg: it}
+		fmt.Printf("[LoadState] Loaded: %s (port=%d, status=%s)\n", it.ID, it.LocalPort, it.Status)
 	}
+	fmt.Printf("[LoadState] Successfully loaded %d proxies\n", len(m.items))
 	return nil
 }
 
@@ -93,10 +101,28 @@ func (m *Manager) saveState() error {
 }
 
 // allocPort allocates next available port
+// First tries to find a released port (gap in used ports), otherwise increments
 func (m *Manager) allocPort() int {
 	if m.nextPort < firstLocalPort {
 		m.nextPort = firstLocalPort
 	}
+
+	// Collect all currently used ports
+	usedPorts := make(map[int]bool)
+	for _, it := range m.items {
+		if it.cfg.LocalPort > 0 {
+			usedPorts[it.cfg.LocalPort] = true
+		}
+	}
+
+	// Try to find a gap (released port) from firstLocalPort to nextPort
+	for port := firstLocalPort; port < m.nextPort; port++ {
+		if !usedPorts[port] {
+			return port
+		}
+	}
+
+	// No gap found, use nextPort and increment
 	p := m.nextPort
 	m.nextPort++
 	return p

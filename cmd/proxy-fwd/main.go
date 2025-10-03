@@ -7,10 +7,22 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 )
+
+func init() {
+	// Set stateFile to executable directory + proxies.yaml
+	exePath, err := os.Executable()
+	if err != nil {
+		log.Fatalf("cannot get executable path: %v", err)
+	}
+	exeDir := filepath.Dir(exePath)
+	stateFile = filepath.Join(exeDir, "proxies.yaml")
+	log.Printf("state file: %s", stateFile)
+}
 
 func main() {
 	// Force local-only binding for UI
@@ -29,14 +41,12 @@ func main() {
 	// load state if exists
 	if err := m.loadState(); err != nil {
 		log.Printf("load state: %v", err)
+	} else {
+		log.Printf("loaded %d proxies from state", len(m.list()))
 	}
 
-	// start any previously known proxies (best-effort)
-	for _, it := range m.list() {
-		if it.LocalPort > 0 { // only start if has assigned port
-			_ = m.start(it.ID)
-		}
-	}
+	// Note: proxies are NOT auto-started on boot
+	// User must manually start them from UI
 
 	// optionally sync
 	if initialAPI != "" {

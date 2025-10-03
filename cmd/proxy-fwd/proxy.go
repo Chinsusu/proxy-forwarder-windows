@@ -170,7 +170,7 @@ func (m *Manager) startLocked(it *ProxyItem) error {
 }
 
 // stopLocked stops a proxy (must be called with Manager lock held)
-// Releases the local port so it can be reused by other proxies
+// Releases the local port so proxy moves to pool
 func (m *Manager) stopLocked(it *ProxyItem) error {
 	if !it.isRunning {
 		return nil
@@ -185,9 +185,9 @@ func (m *Manager) stopLocked(it *ProxyItem) error {
 	
 	// Release the port by setting LocalPort to 0
 	// This moves the proxy to pool and allows port reuse
-	old_port := it.cfg.LocalPort
+	oldPort := it.cfg.LocalPort
 	it.cfg.LocalPort = 0
-	log.Printf("[proxy %s] stopped and released port %d (moved to pool)", it.cfg.ID, old_port)
+	log.Printf("[proxy %s] stopped and released port %d (moved to pool)", it.cfg.ID, oldPort)
 	
 	return nil
 }

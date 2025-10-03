@@ -191,6 +191,9 @@ func (m *Manager) ui() http.Handler {
 	// API: CloudMini order proxy
 	mux.HandleFunc("/api/cloudmini/order", m.handleCloudMiniOrder)
 
+	// API: CloudMini sync all proxy-res to pool
+	mux.HandleFunc("/api/cloudmini/sync", m.handleCloudMiniSync)
+
 	// API: Check exit IP of a proxy
 	mux.HandleFunc("/api/check-ip", func(w http.ResponseWriter, r *http.Request) {
 		if !m.handleAuth(r) {

@@ -11,11 +11,13 @@ import (
 const (
 	defaultUIAddr   = "127.0.0.1:17890"
 	firstLocalPort  = 10001
-	stateFile       = "proxies.yaml"
 	healthURL       = "http://www.gstatic.com/generate_204" // lightweight 204
 	healthInterval  = 10 * time.Second
 	healthFailLimit = 3
 )
+
+// stateFile will be set to executable_dir/proxies.yaml in init()
+var stateFile string
 
 // Upstream represents a single upstream proxy configuration
 type Upstream struct {
@@ -68,4 +70,26 @@ type CloudMiniOrderResponse struct {
 	Code int                    `json:"code"`
 	Msg  string                 `json:"msg"`
 	Data []CloudMiniProxyItem   `json:"data"`
+}
+
+// CloudMiniProxyFull represents a full proxy item from /proxy endpoint
+type CloudMiniProxyFull struct {
+	PK       int    `json:"pk"`
+	IP       string `json:"ip"`
+	HTTPS    string `json:"https"`
+	Socks    string `json:"socks"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+	Location string `json:"location"`
+	Status   string `json:"status"`
+}
+
+// CloudMiniRegionResponse represents the region config response
+type CloudMiniRegionResponse struct {
+	Error bool `json:"error"`
+	Msg   string `json:"msg"`
+	Data  []struct {
+		Type   string   `json:"type"`
+		Region []string `json:"region"`
+	} `json:"data"`
 }

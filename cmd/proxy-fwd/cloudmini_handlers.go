@@ -197,3 +197,136 @@ func (m *Manager) handleCloudMiniOrder(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(proxyBytes)
 }
+
+// handleCloudMiniSync syncs all existing proxy-res proxies from CloudMini
+func (m *Manager) handleCloudMiniSync(w http.ResponseWriter, r *http.Request) {
+	if !m.handleAuth(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "token required", http.StatusBadRequest)
+		return
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	// Fetch all proxies from CloudMini
+	proxyURL := fmt.Sprintf("%s/proxy", cloudMiniBaseURL)
+	proxyReq, _ := http.NewRequest("GET", proxyURL, nil)
+	proxyReq.Header.Set("Authorization", "Token "+token)
+
+	proxyResp, err := client.Do(proxyReq)
+	if err != nil {
+		http.Error(w, "Failed to fetch proxies: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	defer proxyResp.Body.Close()
+
+	var proxyResult struct {
+		Error bool                   `json:"error"`
+		Msg   string                 `json:"msg"`
+		Data  []CloudMiniProxyFull `json:"data"`
+	}
+
+	if err := json.NewDecoder(proxyResp.Body).Decode(&proxyResult); err != nil {
+		http.Error(w, "Failed to parse proxies: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if proxyResult.Error {
+		http.Error(w, "CloudMini error: "+proxyResult.Msg, http.StatusBadRequest)
+		return
+	}
+
+	// 3) Filter proxies by hostname pattern
+	// proxy-res (residential) = ipv4-* or ipv6-* hostname
+	// proxy-isp/static = raw IP address (103.x.x.x)
+	var filtered []CloudMiniProxyFull
+	fmt.Printf("[CloudMini Sync] Checking %d proxies (filtering by hostname pattern):\n", len(proxyResult.Data))
+	for i, proxy := range proxyResult.Data {
+		// Extract hostname (before :port if present)
+		hostname := proxy.IP
+		if idx := len(proxy.IP); idx > 0 {
+			for j := len(proxy.IP) - 1; j >= 0; j-- {
+				if proxy.IP[j] == ':' {
+					hostname = proxy.IP[:j]
+					break
+				}
+			}
+		}
+
+		// Check if hostname starts with ipv4- or ipv6-
+		isResidential := len(hostname) >= 5 && (hostname[:5] == "ipv4-" || hostname[:5] == "ipv6-")
+
+		if i < 5 { // Log first 5 for debugging
+			fmt.Printf("  [%d] ip=%q hostname=%q residential=%v\n", proxy.PK, proxy.IP, hostname, isResidential)
+		}
+
+		if isResidential {
+			filtered = append(filtered, proxy)
+		}
+	}
+
+	fmt.Printf("[CloudMini Sync] Filtered %d/%d proxies (proxy-res residential only)\n", len(filtered), len(proxyResult.Data))
+
+	// 4) Add filtered proxies to pool
+	added := 0
+	var errors []string
+	m.mu.Lock()
+	for _, proxy := range filtered {
+		// Parse hostname (strip :ID suffix)
+		hostname := proxy.IP
+		if idx := len(proxy.IP); idx > 0 {
+			for i := len(proxy.IP) - 1; i >= 0; i-- {
+				if proxy.IP[i] == ':' {
+					hostname = proxy.IP[:i]
+					break
+				}
+			}
+		}
+
+		// Parse port
+		var port int
+		fmt.Sscanf(proxy.HTTPS, "%d", &port)
+		if port == 0 {
+			errors = append(errors, fmt.Sprintf("Invalid port for %s", proxy.IP))
+			continue
+		}
+
+		up := &Upstream{
+			ID:        sanitizeID(hostname, port),
+			Host:      hostname,
+			Port:      port,
+			User:      proxy.User,
+			Pass:      proxy.Password,
+			LocalPort: 0, // Add to pool
+			Status:    "stopped",
+		}
+
+		// Check if already exists
+		if existing, ok := m.items[up.ID]; ok {
+			// Update credentials
+			existing.cfg.User = up.User
+			existing.cfg.Pass = up.Pass
+		} else {
+			m.items[up.ID] = &ProxyItem{cfg: up}
+			added++
+		}
+	}
+	_ = m.saveState()
+	m.mu.Unlock()
+
+	fmt.Printf("[CloudMini Sync] Added %d new proxies to pool\n", added)
+
+	// Return result
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"total":    len(filtered),
+		"added":    added,
+		"existing": len(filtered) - added,
+		"errors":   errors,
+	})
+}

@@ -175,6 +175,17 @@ const indexHTML = `<!doctype html>
       </div>
 
       <div class="bg-white p-4 rounded-xl shadow-sm mb-4">
+        <h3 class="font-bold mb-3">☁️ CloudMini Sync</h3>
+        <div class="flex gap-2">
+          <input id="cloudminiSyncToken" type="password" placeholder="CloudMini API Token" class="flex-1 px-3 py-2 border rounded-lg">
+          <button onclick="handleCloudMiniSyncToPool()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            ☁️ Sync All Proxy-Res
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">💡 Sync all existing proxy-res from CloudMini to pool (not auto-started)</p>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl shadow-sm mb-4">
         <h3 class="font-bold mb-3">🔄 Sync from API</h3>
         <div class="flex gap-2">
           <input id="apiUrlInput" type="text" placeholder="API URL trả về danh sách proxy (text hoặc JSON array)" class="flex-1 px-3 py-2 border rounded-lg">
@@ -265,6 +276,16 @@ const indexHTML = `<!doctype html>
       });
     }
 
+    // Load CloudMini Sync Token from localStorage
+    var cloudminiSyncTokenInput = document.getElementById('cloudminiSyncToken');
+    if(cloudminiSyncTokenInput){
+      cloudminiSyncTokenInput.value = localStorage.getItem('cloudmini_token') || '';
+      cloudminiSyncTokenInput.addEventListener('change', function(){
+        localStorage.setItem('cloudmini_token', cloudminiSyncTokenInput.value.trim());
+        showToast('CloudMini Token saved');
+      });
+    }
+
     function hdr(){ 
       var t = localStorage.getItem('admintoken') || ''; 
       var h = {}; 
@@ -323,7 +344,8 @@ const indexHTML = `<!doctype html>
       tdIdx.textContent = String(idx+1); 
       tr.appendChild(tdIdx);
 
-      var up = (it.user ? it.user + ':' + it.pass + '@' : '') + it.host + ':' + it.port;
+      // Display only hostname:port (no credentials, no ID)
+      var proxyAddr = it.host + ':' + it.port;
       var color = getRandomColor();
       var initial = getInitial(it.host);
       
@@ -338,12 +360,8 @@ const indexHTML = `<!doctype html>
       var divText = document.createElement('div');
       var divMain = document.createElement('div');
       divMain.className = 'font-medium text-gray-800'; 
-      divMain.textContent = up;
-      var divId = document.createElement('div');
-      divId.className = 'text-xs text-gray-500';
-      divId.textContent = 'ID: ' + it.id;
+      divMain.textContent = proxyAddr;
       divText.appendChild(divMain);
-      divText.appendChild(divId);
       divFlex.appendChild(avatar); 
       divFlex.appendChild(divText);
       tdUp.appendChild(divFlex); 
@@ -391,20 +409,15 @@ const indexHTML = `<!doctype html>
       var tdAction = document.createElement('td'); 
       tdAction.className = 'py-3 px-4';
       var btnStart = document.createElement('button'); 
-      btnStart.className = 'action-btn mr-1 text-green-600'; 
+      btnStart.className = 'action-btn mr-2 text-green-600'; 
       btnStart.textContent = '▶';
       btnStart.onclick = function(){ startProxy(it.id); };
       var btnStop = document.createElement('button'); 
-      btnStop.className = 'action-btn mr-1 text-orange-600'; 
+      btnStop.className = 'action-btn text-orange-600'; 
       btnStop.textContent = '⏸';
       btnStop.onclick = function(){ stopProxy(it.id); };
-      var btnDel = document.createElement('button'); 
-      btnDel.className = 'action-btn text-red-600'; 
-      btnDel.textContent = '🗑';
-      btnDel.onclick = function(){ deleteProxy(it.id); };
       tdAction.appendChild(btnStart); 
-      tdAction.appendChild(btnStop); 
-      tdAction.appendChild(btnDel);
+      tdAction.appendChild(btnStop);
       tr.appendChild(tdAction);
 
       return tr;
@@ -799,6 +812,32 @@ const indexHTML = `<!doctype html>
         addProxy(0);
       }).catch(function(e){
         showToast('CloudMini Error: ' + e.message);
+      });
+    }
+
+    function handleCloudMiniSyncToPool(){
+      var token = document.getElementById('cloudminiSyncToken').value.trim();
+      
+      if(!token){ showToast('Enter CloudMini Token'); return; }
+      
+      var url = '/api/cloudmini/sync?token=' + encodeURIComponent(token);
+      
+      showToast('Syncing from CloudMini... (this may take a while)');
+      
+      fetch(url, {
+        headers: hdr()
+      }).then(function(r){
+        if(!r.ok) return r.text().then(function(t){ throw new Error(t); });
+        return r.json();
+      }).then(function(result){
+        var msg = 'CloudMini Sync: ' + result.total + ' total, ' + result.added + ' added, ' + result.existing + ' existing';
+        if(result.errors && result.errors.length > 0){
+          msg += ', ' + result.errors.length + ' errors';
+        }
+        showToast(msg);
+        reload();
+      }).catch(function(e){
+        showToast('CloudMini Sync Error: ' + e.message);
       });
     }
 
