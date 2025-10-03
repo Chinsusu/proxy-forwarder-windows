@@ -185,7 +185,11 @@ func (m *Manager) stop(id string) error {
 	if !ok {
 		return os.ErrNotExist
 	}
-	return m.stopLocked(it)
+	if err := m.stopLocked(it); err != nil {
+		return err
+	}
+	// Save state after stopping (port released, moved to pool)
+	return m.saveState()
 }
 
 // list returns all upstream configs

@@ -185,6 +185,12 @@ func (m *Manager) ui() http.Handler {
 		io.WriteString(w, strings.Join(lines, "\n"))
 	})
 
+	// API: CloudMini regions proxy
+	mux.HandleFunc("/api/cloudmini/regions", m.handleCloudMiniRegions)
+
+	// API: CloudMini order proxy
+	mux.HandleFunc("/api/cloudmini/order", m.handleCloudMiniOrder)
+
 	// API: Check exit IP of a proxy
 	mux.HandleFunc("/api/check-ip", func(w http.ResponseWriter, r *http.Request) {
 		if !m.handleAuth(r) {

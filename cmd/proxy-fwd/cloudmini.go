@@ -10,15 +10,16 @@ import (
 )
 
 // parseCloudMiniProxy parses CloudMini proxy item to Upstream
-// CloudMini ip field format: "hostname:internal_id" 
+// CloudMini ip field format: "hostname:internal_id" (e.g. "ipv4-vt-01.resvn.net:123")
 // We need to extract hostname and use https field as port
 func parseCloudMiniProxy(item CloudMiniProxyItem) (*Upstream, error) {
 	// Parse IP field - format: "hostname:internal_id"
-	// We need to strip the :internal_id part and just use hostname
+	// Strip the :internal_id suffix to get just the hostname
 	hostname := item.IP
 	if idx := strings.Index(item.IP, ":"); idx != -1 {
 		hostname = item.IP[:idx]
 	}
+	fmt.Printf("[CloudMini Parse] Original IP: %s, Extracted hostname: %s, Port: %s\n", item.IP, hostname, item.HTTPS)
 
 	// Parse HTTPS port
 	port, err := strconv.Atoi(item.HTTPS)
@@ -30,7 +31,7 @@ func parseCloudMiniProxy(item CloudMiniProxyItem) (*Upstream, error) {
 		ID:   sanitizeID(hostname, port),
 		Host: hostname,
 		Port: port,
-		User: item.Username,
+		User: item.User,
 		Pass: item.Password,
 	}
 	return up, nil

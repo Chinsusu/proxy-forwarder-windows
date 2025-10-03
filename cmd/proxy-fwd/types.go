@@ -57,10 +57,10 @@ type ProxyItem struct {
 
 // CloudMiniProxyItem represents a proxy from CloudMini API
 type CloudMiniProxyItem struct {
-	IP       string `json:"ip"`        // format: "hostname:internal_id"
+	IP       string `json:"ip"`        // format: "hostname:port"
 	HTTPS    string `json:"https"`     // the actual proxy port
-	Username string `json:"username"`
-	Password string `json:"password"`
+	User     string `json:"user"`      // username for auth
+	Password string `json:"password"`  // password for auth
 }
 
 // CloudMiniOrderResponse represents the response from CloudMini order API
