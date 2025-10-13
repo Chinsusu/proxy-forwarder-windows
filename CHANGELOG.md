@@ -14,6 +14,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Usage statistics and analytics
 - WebSocket for real-time UI updates
 
+## [1.3.0] - 2025-10-13
+
+### Added
+- **Location column** in Pool tab to display proxy location
+- Search filter now includes location field for better filtering
+
+### Changed
+- **Proxy type**: Replaced 'isp' with 'privatev4' (icon: 🔐 lock)
+- Updated type icons and colors for better visual clarity
+- Improved Pool tab layout with location information
+
+### Removed
+- **Sync from API** section removed from Pool tab
+- `/api/sync` endpoint and `syncFromAPI()` function removed
+- `INITIAL_API` environment variable support removed
+- Cleaned up unused imports in manager.go
+
+### Technical Details
+- Added `Location` field to `Upstream` struct in types.go
+- Updated Pool table to display 6 columns (#, Proxy Address, Type, Location, Status, Action)
+- Modified filterPool() to search by location alongside type and address
+- Removed syncFromAPI() method from Manager
+- Updated UI colspan values to match new column count
+
 ## [1.2.0] - 2025-10-13
 
 ### Changed
