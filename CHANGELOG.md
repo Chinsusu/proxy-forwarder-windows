@@ -14,6 +14,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Usage statistics and analytics
 - WebSocket for real-time UI updates
 
+## [1.4.0] - 2025-10-13
+
+### Added
+- **🔥 Firewall Protection**: Automatic Windows Firewall rules to prevent WebRTC leaks
+- Auto-detect and protect Chrome, Edge, Firefox, Brave browsers
+- Environment variable `ENABLE_FIREWALL` (default: true)
+- API endpoint `/api/firewall/status` to check protection status
+- Automatic cleanup of firewall rules on graceful exit
+- New module: `firewall.go` with complete firewall management
+- Documentation: `FIREWALL-PROTECTION.md` with full setup guide
+
+### Changed
+- Requires Administrator privileges for full firewall protection
+- Firewall enabled by default (can be disabled with `ENABLE_FIREWALL=false`)
+- Enhanced security with browser isolation from direct internet access
+
+### Security
+- **WebRTC Leak Prevention**: Blocks browsers from bypassing proxy
+- **Kill-Switch**: Prevents direct internet access when proxies fail
+- **Automatic Protection**: No manual firewall configuration needed
+
+### Technical Details
+- Added `setupFirewall()` - Creates firewall rules on startup
+- Added `cleanupFirewall()` - Removes rules on shutdown
+- Added `isAdmin()` - Checks Administrator privileges
+- Port range protected: 127.0.0.1:10001-20000
+- Rules grouped under "ProxyFwd Rules" for easy management
+
 ## [1.3.0] - 2025-10-13
 
 ### Added

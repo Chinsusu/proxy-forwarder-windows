@@ -176,6 +176,21 @@ func (m *Manager) ui() http.Handler {
 	// API: CloudMini sync all proxy-res to pool
 	mux.HandleFunc("/api/cloudmini/sync", m.handleCloudMiniSync)
 
+	// API: Firewall status
+	mux.HandleFunc("/api/firewall/status", func(w http.ResponseWriter, r *http.Request) {
+		if !m.handleAuth(r) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		rules, _ := listFirewallRules()
+		json.NewEncoder(w).Encode(map[string]any{
+			"enabled":    len(rules) > 0,
+			"is_admin":   isAdmin(),
+			"rule_count": len(rules),
+			"rules":      rules,
+		})
+	})
+
 	// API: Check exit IP of a proxy
 	mux.HandleFunc("/api/check-ip", func(w http.ResponseWriter, r *http.Request) {
 		if !m.handleAuth(r) {

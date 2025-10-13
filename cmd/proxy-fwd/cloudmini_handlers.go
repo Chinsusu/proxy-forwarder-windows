@@ -292,6 +292,8 @@ func (m *Manager) handleCloudMiniSync(w http.ResponseWriter, r *http.Request) {
 			User:      proxy.User,
 			Pass:      proxy.Password,
 			LocalPort: 0, // Add to pool
+			ProxyType: detectProxyTypeWithPrice(hostname, proxy.Price),
+			Location:  proxy.Location,
 			Status:    "stopped",
 		}
 

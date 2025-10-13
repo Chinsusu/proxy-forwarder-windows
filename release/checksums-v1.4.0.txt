@@ -1,0 +1,16 @@
+# Proxy Forward v1.4.0 - SHA256 Checksums
+# Generated: 2025-10-13 20:56
+
+## Binary
+D5223CCE831DAA4763D5A6A68188085A61608DB6AB9C20BBA169CED8B4000BF4  proxy-fwd-v1.4.0.exe
+
+## Portable Package
+F7CF847A6E25FEC26C353F175701460E1AC5C8976FD08DD0987209C3B7464DB3  proxy-forwarder-portable-v1.4.0.zip
+
+# Verification Instructions:
+# 
+# Windows PowerShell:
+#   Get-FileHash .\proxy-fwd-v1.4.0.exe -Algorithm SHA256
+#   Get-FileHash .\proxy-forwarder-portable-v1.4.0.zip -Algorithm SHA256
+#
+# Compare the Hash output with the values above.

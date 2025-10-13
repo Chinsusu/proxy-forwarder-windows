@@ -32,6 +32,17 @@ func main() {
 		log.Fatalf("UI_ADDR must bind to 127.0.0.1, got %s", uiAddr)
 	}
 
+	// Firewall protection (default: enabled)
+	enableFirewall := getenv("ENABLE_FIREWALL", "true")
+	if enableFirewall == "true" || enableFirewall == "1" {
+		if err := setupFirewall(); err != nil {
+			log.Printf("[Firewall] Error: %v", err)
+			log.Printf("[Firewall] Continuing without firewall protection...")
+		}
+	} else {
+		log.Printf("[Firewall] Disabled via ENABLE_FIREWALL=false")
+	}
+
 	// optional initial list
 	initialList := os.Getenv("INITIAL_PROXIES") // "ip:port:user:pass,ip:port:..."
 
@@ -86,6 +97,14 @@ func main() {
 	for _, it := range m.list() {
 		_ = m.stop(it.ID)
 	}
+
+	// cleanup firewall rules
+	if enableFirewall == "true" || enableFirewall == "1" {
+		if err := cleanupFirewall(); err != nil {
+			log.Printf("[Firewall] Cleanup error: %v", err)
+		}
+	}
+
 	log.Printf("bye")
 }
 
