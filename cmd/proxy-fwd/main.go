@@ -32,8 +32,7 @@ func main() {
 		log.Fatalf("UI_ADDR must bind to 127.0.0.1, got %s", uiAddr)
 	}
 
-	// optional initial API to sync, or initial list
-	initialAPI := os.Getenv("INITIAL_API")
+	// optional initial list
 	initialList := os.Getenv("INITIAL_PROXIES") // "ip:port:user:pass,ip:port:..."
 
 	m := NewManager(adminToken)
@@ -48,11 +47,7 @@ func main() {
 	// Note: proxies are NOT auto-started on boot
 	// User must manually start them from UI
 
-	// optionally sync
-	if initialAPI != "" {
-		added, errs := m.syncFromAPI(initialAPI)
-		log.Printf("initial sync added=%d errs=%v", added, errs)
-	}
+	// optionally add initial proxies
 	if initialList != "" {
 		for _, line := range strings.Split(initialList, ",") {
 			line = strings.TrimSpace(line)

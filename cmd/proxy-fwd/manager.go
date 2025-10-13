@@ -1,14 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -40,9 +36,10 @@ func parseProxyLine(line string) (*Upstream, error) {
 		return nil, fmt.Errorf("invalid port in %q: %v", line, err)
 	}
 	up := &Upstream{
-		ID:   sanitizeID(host, p),
-		Host: host,
-		Port: p,
+		ID:        sanitizeID(host, p),
+		Host:      host,
+		Port:      p,
+		ProxyType: detectProxyType(host),
 	}
 	if len(parts) >= 4 {
 		up.User = strings.TrimSpace(parts[2])
@@ -235,52 +232,6 @@ func (m *Manager) list() []*Upstream {
 		}
 	}
 	return res
-}
-
-// syncFromAPI syncs proxies from external API
-func (m *Manager) syncFromAPI(urlStr string) (int, []string) {
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(urlStr)
-	if err != nil {
-		return 0, []string{err.Error()}
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
-	text := strings.TrimSpace(string(body))
-	added := 0
-	var errs []string
-
-	// Try JSON array of strings first
-	var arr []string
-	if strings.HasPrefix(text, "[") {
-		if err := json.Unmarshal([]byte(text), &arr); err == nil {
-			for _, line := range arr {
-				if strings.TrimSpace(line) == "" {
-					continue
-				}
-				if _, e := m.addStartLine(line); e != nil {
-					errs = append(errs, e.Error())
-				} else {
-					added++
-				}
-			}
-			return added, errs
-		}
-	}
-
-	// Fallback: line-delimited
-	for _, line := range strings.Split(text, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if _, e := m.addStartLine(line); e != nil {
-			errs = append(errs, e.Error())
-		} else {
-			added++
-		}
-	}
-	return added, errs
 }
 
 // addStartLine parses and starts a proxy from a line

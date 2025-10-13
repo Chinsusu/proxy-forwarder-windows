@@ -154,24 +154,6 @@ func (m *Manager) ui() http.Handler {
 		w.WriteHeader(204)
 	})
 
-	// API: Sync from external API
-	mux.HandleFunc("/api/sync", func(w http.ResponseWriter, r *http.Request) {
-		if !m.handleAuth(r) {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		apiURL := r.URL.Query().Get("url")
-		if apiURL == "" {
-			http.Error(w, "url param required", 400)
-			return
-		}
-		added, errs := m.syncFromAPI(apiURL)
-		json.NewEncoder(w).Encode(map[string]any{
-			"added":  added,
-			"errors": errs,
-		})
-	})
-
 	// API: Export local proxy addresses
 	mux.HandleFunc("/api/export-local", func(w http.ResponseWriter, r *http.Request) {
 		if !m.handleAuth(r) {

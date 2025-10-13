@@ -100,6 +100,14 @@ const indexHTML = `<!doctype html>
               <input id="autoRefreshCheck" type="checkbox" class="accent-purple-600" onchange="toggleAutoRefresh()">
               <span class="text-sm">Auto 5s</span>
             </label>
+            <select id="typeFilter" onchange="handleSearch()" class="px-3 py-2 border rounded-lg text-sm">
+              <option value="">All Types</option>
+              <option value="residential">🏠 Residential</option>
+              <option value="privatev4">🔐 PrivateV4</option>
+              <option value="static">🔒 Static</option>
+              <option value="datacenter">🏢 Datacenter</option>
+              <option value="unknown">❓ Unknown</option>
+            </select>
             <input id="searchInput" type="text" placeholder="Search..." class="px-3 py-2 border rounded-lg">
             <button onclick="handleSearch()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
               🔍 Search
@@ -112,6 +120,7 @@ const indexHTML = `<!doctype html>
               <tr>
                 <th class="py-3 px-4 text-left">#</th>
                 <th class="py-3 px-4 text-left">Proxy Address</th>
+                <th class="py-3 px-4 text-left">Type</th>
                 <th class="py-3 px-4 text-left">Local Port</th>
                 <th class="py-3 px-4 text-left">Status</th>
                 <th class="py-3 px-4 text-left">Exit IP</th>
@@ -185,21 +194,19 @@ const indexHTML = `<!doctype html>
         <p class="text-xs text-gray-500 mt-2">💡 Sync all existing proxy-res from CloudMini to pool (not auto-started)</p>
       </div>
 
-      <div class="bg-white p-4 rounded-xl shadow-sm mb-4">
-        <h3 class="font-bold mb-3">🔄 Sync from API</h3>
-        <div class="flex gap-2">
-          <input id="apiUrlInput" type="text" placeholder="API URL trả về danh sách proxy (text hoặc JSON array)" class="flex-1 px-3 py-2 border rounded-lg">
-          <button onclick="handleSyncAPI()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            🔄 Sync API
-          </button>
-        </div>
-        <p class="text-xs text-gray-500 mt-2">💡 Synced proxies will be auto-started</p>
-      </div>
-
       <div class="bg-white p-4 rounded-xl shadow-sm">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-bold">Pool Proxies (Stopped)</h3>
           <div class="flex items-center gap-2">
+            <select id="poolTypeFilter" onchange="filterPool()" class="px-3 py-2 border rounded-lg text-sm">
+              <option value="">All Types</option>
+              <option value="residential">🏠 Residential</option>
+              <option value="privatev4">🔐 PrivateV4</option>
+              <option value="static">🔒 Static</option>
+              <option value="datacenter">🏢 Datacenter</option>
+              <option value="unknown">❓ Unknown</option>
+            </select>
+            <input id="poolSearchInput" type="text" placeholder="Search..." class="px-3 py-2 border rounded-lg" onchange="filterPool()" onkeyup="filterPool()">
             <button onclick="startAllPool()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
               ▶ Start All
             </button>
@@ -214,6 +221,8 @@ const indexHTML = `<!doctype html>
               <tr>
                 <th class="py-3 px-4 text-left">#</th>
                 <th class="py-3 px-4 text-left">Proxy Address</th>
+                <th class="py-3 px-4 text-left">Type</th>
+                <th class="py-3 px-4 text-left">Location</th>
                 <th class="py-3 px-4 text-left">Status</th>
                 <th class="py-3 px-4 text-left">Action</th>
               </tr>
@@ -367,6 +376,18 @@ const indexHTML = `<!doctype html>
       tdUp.appendChild(divFlex); 
       tr.appendChild(tdUp);
 
+      // Type column
+      var tdType = document.createElement('td');
+      tdType.className = 'py-3 px-4';
+      var typeIcon = {'residential':'🏠','privatev4':'🔐','static':'🔒','datacenter':'🏢','unknown':'❓'};
+      var typeColor = {'residential':'bg-green-100 text-green-800','privatev4':'bg-blue-100 text-blue-800','static':'bg-gray-100 text-gray-800','datacenter':'bg-purple-100 text-purple-800','unknown':'bg-yellow-100 text-yellow-800'};
+      var type = it.proxy_type || 'unknown';
+      var typeBadge = document.createElement('span');
+      typeBadge.className = 'px-2 py-1 rounded-full text-xs font-medium ' + (typeColor[type] || typeColor['unknown']);
+      typeBadge.textContent = (typeIcon[type] || '❓') + ' ' + type.charAt(0).toUpperCase() + type.slice(1);
+      tdType.appendChild(typeBadge);
+      tr.appendChild(tdType);
+
       var local = '127.0.0.1:' + it.local_port;
       var tdLocal = document.createElement('td'); 
       tdLocal.className = 'py-3 px-4';
@@ -440,7 +461,7 @@ const indexHTML = `<!doctype html>
       if(list.length === 0){
         var tr = document.createElement('tr');
         var td = document.createElement('td');
-        td.colSpan = 6;
+        td.colSpan = 7; // Updated to 7 columns (added Type column)
         td.className = 'py-8 text-center text-gray-500';
         td.textContent = 'No proxies yet. Add one above!';
         tr.appendChild(td);
@@ -483,7 +504,7 @@ const indexHTML = `<!doctype html>
       if(pool.length === 0){
         var tr = document.createElement('tr');
         var td = document.createElement('td');
-        td.colSpan = 4;
+        td.colSpan = 6; // Updated to 6 columns (#, Proxy Address, Type, Location, Status, Action)
         td.className = 'py-8 text-center text-gray-500';
         td.textContent = 'Pool is empty. Order proxies to add to pool.';
         tr.appendChild(td);
@@ -500,11 +521,30 @@ const indexHTML = `<!doctype html>
         tdIdx.textContent = String(idx+1);
         tr.appendChild(tdIdx);
         
-        var up = (it.user ? it.user + ':' + it.pass + '@' : '') + it.host + ':' + it.port;
+        // Only show ip:port, no credentials
+        var proxyAddr = it.host + ':' + it.port;
         var tdUp = document.createElement('td');
         tdUp.className = 'py-3 px-4 font-mono text-sm';
-        tdUp.textContent = up;
+        tdUp.textContent = proxyAddr;
         tr.appendChild(tdUp);
+        
+        // Type column
+        var tdType = document.createElement('td');
+        tdType.className = 'py-3 px-4';
+        var typeIcon = {'residential':'🏠','privatev4':'🔐','static':'🔒','datacenter':'🏢','unknown':'❓'};
+        var typeColor = {'residential':'bg-green-100 text-green-800','privatev4':'bg-blue-100 text-blue-800','static':'bg-gray-100 text-gray-800','datacenter':'bg-purple-100 text-purple-800','unknown':'bg-yellow-100 text-yellow-800'};
+        var type = it.proxy_type || 'unknown';
+        var typeBadge = document.createElement('span');
+        typeBadge.className = 'px-2 py-1 rounded-full text-xs font-medium ' + (typeColor[type] || typeColor['unknown']);
+        typeBadge.textContent = (typeIcon[type] || '❓') + ' ' + type.charAt(0).toUpperCase() + type.slice(1);
+        tdType.appendChild(typeBadge);
+        tr.appendChild(tdType);
+        
+        // Location column
+        var tdLocation = document.createElement('td');
+        tdLocation.className = 'py-3 px-4 text-xs text-gray-600';
+        tdLocation.textContent = it.location || '-';
+        tr.appendChild(tdLocation);
         
         var tdStatus = document.createElement('td');
         tdStatus.className = 'py-3 px-4';
@@ -590,17 +630,144 @@ const indexHTML = `<!doctype html>
       delNext(0);
     }
 
+    function filterPool(){
+      if(!DATA.items) return;
+      
+      var typeFilter = document.getElementById('poolTypeFilter').value;
+      var searchQuery = document.getElementById('poolSearchInput').value.toLowerCase();
+      
+      // Get all pool items
+      var pool = DATA.items.filter(function(it){ 
+        return it.status === 'stopped' || it.local_port === 0; 
+      });
+      
+      // Apply type filter
+      if(typeFilter){
+        pool = pool.filter(function(it){
+          return (it.proxy_type || 'unknown') === typeFilter;
+        });
+      }
+      
+      // Apply search filter
+      if(searchQuery){
+        pool = pool.filter(function(it){
+          var up = (it.user ? it.user + ':' + it.pass + '@' : '') + it.host + ':' + it.port;
+          var type = it.proxy_type || 'unknown';
+          var location = it.location || '';
+          return up.toLowerCase().indexOf(searchQuery) !== -1 || 
+                 type.toLowerCase().indexOf(searchQuery) !== -1 ||
+                 location.toLowerCase().indexOf(searchQuery) !== -1;
+        });
+      }
+      
+      // Render filtered pool
+      var poolRows = document.getElementById('poolRows');
+      var poolCount = document.getElementById('poolCountText');
+      if(!poolRows) return;
+      
+      poolRows.innerHTML = '';
+      poolCount.textContent = 'Pool: ' + pool.length + ' proxies' + (typeFilter || searchQuery ? ' (filtered)' : '');
+      
+      if(pool.length === 0){
+        var tr = document.createElement('tr');
+        var td = document.createElement('td');
+        td.colSpan = 6;
+        td.className = 'py-8 text-center text-gray-500';
+        td.textContent = (typeFilter || searchQuery) ? 'No proxies match the filter.' : 'Pool is empty.';
+        tr.appendChild(td);
+        poolRows.appendChild(tr);
+        return;
+      }
+      
+      pool.forEach(function(it, idx){
+        var tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50';
+        
+        var tdIdx = document.createElement('td');
+        tdIdx.className = 'py-3 px-4 text-gray-600';
+        tdIdx.textContent = String(idx+1);
+        tr.appendChild(tdIdx);
+        
+        // Only show ip:port, no credentials
+        var proxyAddr = it.host + ':' + it.port;
+        var tdUp = document.createElement('td');
+        tdUp.className = 'py-3 px-4 font-mono text-sm';
+        tdUp.textContent = proxyAddr;
+        tr.appendChild(tdUp);
+        
+        // Type column
+        var tdType = document.createElement('td');
+        tdType.className = 'py-3 px-4';
+        var typeIcon = {'residential':'🏠','privatev4':'🔐','static':'🔒','datacenter':'🏢','unknown':'❓'};
+        var typeColor = {'residential':'bg-green-100 text-green-800','privatev4':'bg-blue-100 text-blue-800','static':'bg-gray-100 text-gray-800','datacenter':'bg-purple-100 text-purple-800','unknown':'bg-yellow-100 text-yellow-800'};
+        var type = it.proxy_type || 'unknown';
+        var typeBadge = document.createElement('span');
+        typeBadge.className = 'px-2 py-1 rounded-full text-xs font-medium ' + (typeColor[type] || typeColor['unknown']);
+        typeBadge.textContent = (typeIcon[type] || '❓') + ' ' + type.charAt(0).toUpperCase() + type.slice(1);
+        tdType.appendChild(typeBadge);
+        tr.appendChild(tdType);
+        
+        // Location column
+        var tdLocation = document.createElement('td');
+        tdLocation.className = 'py-3 px-4 text-xs text-gray-600';
+        tdLocation.textContent = it.location || '-';
+        tr.appendChild(tdLocation);
+        
+        var tdStatus = document.createElement('td');
+        tdStatus.className = 'py-3 px-4';
+        var badge = document.createElement('span');
+        badge.className = 'status-inactive';
+        badge.textContent = 'In Pool';
+        tdStatus.appendChild(badge);
+        tr.appendChild(tdStatus);
+        
+        var tdAction = document.createElement('td');
+        tdAction.className = 'py-3 px-4';
+        var btnStart = document.createElement('button');
+        btnStart.className = 'action-btn mr-2 text-green-600';
+        btnStart.textContent = '▶ Start';
+        btnStart.onclick = function(){ startProxy(it.id); };
+        var btnDel = document.createElement('button');
+        btnDel.className = 'action-btn text-red-600';
+        btnDel.textContent = '🗑 Del';
+        btnDel.onclick = function(){ deleteProxy(it.id); };
+        tdAction.appendChild(btnStart);
+        tdAction.appendChild(btnDel);
+        tr.appendChild(tdAction);
+        
+        poolRows.appendChild(tr);
+      });
+    }
+
     function handleSearch(){
       var query = document.getElementById('searchInput').value.toLowerCase();
+      var typeFilter = document.getElementById('typeFilter').value;
+      
       // Always filter only active proxies (local_port > 0)
       var activeProxies = DATA.items.filter(function(it){
         return it.local_port > 0;
       });
-      if(!query){ render(activeProxies); return; }
+      
+      // Apply type filter
+      if(typeFilter){
+        activeProxies = activeProxies.filter(function(it){
+          return (it.proxy_type || 'unknown') === typeFilter;
+        });
+      }
+      
+      // Apply search query
+      if(!query){ 
+        render(activeProxies); 
+        return; 
+      }
+      
       var filtered = activeProxies.filter(function(it){
         var up = (it.user ? it.user + ':' + it.pass + '@' : '') + it.host + ':' + it.port;
         var local = '127.0.0.1:' + it.local_port;
-        return up.toLowerCase().indexOf(query) !== -1 || local.indexOf(query) !== -1;
+        var type = it.proxy_type || 'unknown';
+        return up.toLowerCase().indexOf(query) !== -1 || 
+               local.indexOf(query) !== -1 || 
+               type.toLowerCase().indexOf(query) !== -1;
       });
       render(filtered);
     }
@@ -611,17 +778,6 @@ const indexHTML = `<!doctype html>
       POST('/api/add', line).then(function(){
         document.getElementById('singleProxyInput').value = '';
         showToast('Added successfully');
-        reload();
-      }).catch(function(e){
-        showToast('Error: ' + e.message);
-      });
-    }
-
-    function handleSyncAPI(){
-      var url = document.getElementById('apiUrlInput').value.trim();
-      if(!url){ showToast('Enter API URL'); return; }
-      GET('/api/sync?url=' + encodeURIComponent(url)).then(function(result){
-        showToast('Synced: ' + (result.added || 0) + ' added');
         reload();
       }).catch(function(e){
         showToast('Error: ' + e.message);

@@ -27,6 +27,8 @@ type Upstream struct {
 	User      string `yaml:"user" json:"user"`
 	Pass      string `yaml:"pass" json:"pass"`
 	LocalPort int    `yaml:"local_port" json:"local_port"`
+	ProxyType string `yaml:"proxy_type" json:"proxy_type"` // residential|privatev4|datacenter|static|unknown
+	Location  string `yaml:"location" json:"location"`     // Geographic location
 
 	Status    string `yaml:"status" json:"status"` // creating|live|dead|stopped
 	LastError string `yaml:"last_error" json:"last_error"`
@@ -80,8 +82,9 @@ type CloudMiniProxyFull struct {
 	Socks    string `json:"socks"`
 	User     string `json:"user"`
 	Password string `json:"password"`
-	Location string `json:"location"`
+	Location string `json:"location"` // Already exists
 	Status   string `json:"status"`
+	Price    int    `json:"price"`
 }
 
 // CloudMiniRegionResponse represents the region config response
