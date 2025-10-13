@@ -241,13 +241,12 @@ func (m *Manager) handleCloudMiniSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3) Filter proxies by hostname pattern
-	// proxy-res (residential) = ipv4-* or ipv6-* hostname
-	// proxy-isp/static = raw IP address (103.x.x.x)
-	var filtered []CloudMiniProxyFull
-	fmt.Printf("[CloudMini Sync] Checking %d proxies (filtering by hostname pattern):\n", len(proxyResult.Data))
-	for i, proxy := range proxyResult.Data {
-		// Extract hostname (before :port if present)
+	// Sync all proxies without filtering by type
+	fmt.Printf("[CloudMini Sync] Syncing all %d proxies (no filtering)\n", len(proxyResult.Data))
+	
+	// Log first 5 proxies for debugging
+	for i := 0; i < len(proxyResult.Data) && i < 5; i++ {
+		proxy := proxyResult.Data[i]
 		hostname := proxy.IP
 		if idx := len(proxy.IP); idx > 0 {
 			for j := len(proxy.IP) - 1; j >= 0; j-- {
@@ -257,20 +256,10 @@ func (m *Manager) handleCloudMiniSync(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-
-		// Check if hostname starts with ipv4- or ipv6-
-		isResidential := len(hostname) >= 5 && (hostname[:5] == "ipv4-" || hostname[:5] == "ipv6-")
-
-		if i < 5 { // Log first 5 for debugging
-			fmt.Printf("  [%d] ip=%q hostname=%q residential=%v\n", proxy.PK, proxy.IP, hostname, isResidential)
-		}
-
-		if isResidential {
-			filtered = append(filtered, proxy)
-		}
+		fmt.Printf("  [%d] ip=%q hostname=%q port=%s\n", proxy.PK, proxy.IP, hostname, proxy.HTTPS)
 	}
-
-	fmt.Printf("[CloudMini Sync] Filtered %d/%d proxies (proxy-res residential only)\n", len(filtered), len(proxyResult.Data))
+	
+	filtered := proxyResult.Data
 
 	// 4) Add filtered proxies to pool
 	added := 0
@@ -319,7 +308,7 @@ func (m *Manager) handleCloudMiniSync(w http.ResponseWriter, r *http.Request) {
 	_ = m.saveState()
 	m.mu.Unlock()
 
-	fmt.Printf("[CloudMini Sync] Added %d new proxies to pool\n", added)
+	fmt.Printf("[CloudMini Sync] Added %d new proxies to pool (total: %d)\n", added, len(filtered))
 
 	// Return result
 	w.Header().Set("Content-Type", "application/json")

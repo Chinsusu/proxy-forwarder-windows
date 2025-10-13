@@ -1,0 +1,104 @@
+# Changelog
+
+All notable changes to Proxy Forward will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Planned
+- Unit tests for core components
+- SOCKS5 proxy support
+- Proxy rotation/load balancing
+- Usage statistics and analytics
+- WebSocket for real-time UI updates
+
+## [1.2.0] - 2025-10-13
+
+### Changed
+- **CloudMini Sync**: Removed residential-only filter in `handleCloudMiniSync`
+- Now syncs **all proxy types** from CloudMini API (residential, ISP, static, datacenter)
+- Improved logging messages to reflect all-proxy sync behavior
+
+### Fixed
+- Better hostname extraction for non-residential proxies
+- More detailed debug logging for first 5 proxies in sync
+
+### Technical Details
+- Modified `cmd/proxy-fwd/cloudmini_handlers.go` line 244-274
+- Removed `isResidential` filter logic
+- Changed log from "proxy-res residential only" to "no filtering"
+
+## [1.1.0] - 2025-10-12
+
+### Added
+- CloudMini API integration for ordering proxies
+- CloudMini sync functionality to import existing proxies
+- Proxy pool management (stopped proxies without ports)
+- Bulk add/remove operations in UI
+- Exit IP checking functionality
+- Auto-refresh option in UI (5-second interval)
+- Region selection for CloudMini orders
+- Auto-start option for ordered proxies
+
+### Changed
+- Port allocation now reuses released ports (gap-filling algorithm)
+- Stopped proxies release their ports and move to pool
+- Improved UI with three tabs: Proxies, Pool, Order
+
+### Fixed
+- Memory leak in health check goroutines
+- Race condition in port allocation
+- State persistence issues on rapid start/stop
+
+## [1.0.0] - 2025-10-01
+
+### Added
+- Initial release of Proxy Forward
+- HTTP proxy forwarding from public to local (127.0.0.1:10001+)
+- Web UI for proxy management (http://127.0.0.1:17890)
+- Health monitoring with automatic failover (3 consecutive failures)
+- State persistence to `proxies.yaml`
+- Admin token authentication support
+- Graceful shutdown with context cancellation
+- Windows service support
+- Firewall kill-switch scripts
+
+### Features
+- Local-only HTTP proxy listeners on 127.0.0.1
+- Upstream proxy support with Basic Auth
+- Add/Remove/Start/Stop proxy operations
+- API sync from external endpoints
+- Export local proxy list
+- Automatic port assignment starting from 10001
+
+### Security
+- Forces localhost-only binding (127.0.0.1)
+- Optional admin token protection via `X-Admin-Token` header
+- Firewall integration for preventing direct internet access
+
+### Architecture
+- Manager pattern for proxy lifecycle management
+- Thread-safe operations with RWMutex
+- Atomic state file operations
+- Independent health check goroutines per proxy
+- Custom HTTPS tunneling via `ConnectDial`
+
+---
+
+## Release Notes Format
+
+### Types of Changes
+- `Added` for new features
+- `Changed` for changes in existing functionality
+- `Deprecated` for soon-to-be removed features
+- `Removed` for now removed features
+- `Fixed` for any bug fixes
+- `Security` for vulnerability fixes
+
+### Version Links
+- [Unreleased]: https://github.com/yourusername/proxy-fwd-windows/compare/v1.2.0...HEAD
+- [1.2.0]: https://github.com/yourusername/proxy-fwd-windows/compare/v1.1.0...v1.2.0
+- [1.1.0]: https://github.com/yourusername/proxy-fwd-windows/compare/v1.0.0...v1.1.0
+- [1.0.0]: https://github.com/yourusername/proxy-fwd-windows/releases/tag/v1.0.0
